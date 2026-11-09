@@ -1,5 +1,9 @@
 # Steam-Wine-Setup
 
+**[Descargar el ZIP probado (v0.1.0)](https://github.com/lechuit/Steam-Wine-Setup/releases/download/v0.1.0/Steam-Wine-Setup-0f9cc56.zip)** · [Notas de la versión](https://github.com/lechuit/Steam-Wine-Setup/releases/tag/v0.1.0)
+
+**Validación de esta versión:** FINAL FANTASY RESONANCE abrió al primer intento tras reinstalar Wine y NotProton y preparar un entorno nuevo, con Steam ya instalado. El perfil de **AION 2 está incluido y no se probó en esta validación**.
+
 Este proyecto reúne en **un solo ZIP** el instalador para probar juegos de Windows de tu biblioteca de Steam en un Mac con Apple Silicon, el código base de instalación, el código fuente de NotProton y los perfiles de RESONANCE y AION 2. Una instalación de Steam y NotProton sirve para varios juegos. Cada juego conserva su propio entorno de Wine y puede necesitar ajustes distintos. Si existe una versión nativa para macOS, empieza por esa versión.
 
 **No hay compatibilidad universal.** Un juego puede no arrancar o fallar en videos, controles, modo en línea o rendimiento. El soporte depende del juego, sus servicios y las versiones de macOS, Steam y Wine. No uses este flujo para eludir DRM, restricciones de acceso o sistemas antitrampas. Los juegos con controladores antitrampas de Windows o lanzadores externos pueden quedar fuera de esta configuración.
@@ -13,17 +17,17 @@ Este proyecto reúne en **un solo ZIP** el instalador para probar juegos de Wind
 
 ## 2. Qué descargar
 
-1. Descarga el [ZIP del proyecto](https://github.com/lechuit/Steam-Wine-Setup/archive/refs/heads/main.zip) y descomprímelo. Usa la carpeta completa; el archivo `.command` necesita los scripts que están junto a él. Si usas Git, la alternativa es:
+1. Descarga el [ZIP de la release v0.1.0](https://github.com/lechuit/Steam-Wine-Setup/releases/download/v0.1.0/Steam-Wine-Setup-0f9cc56.zip) y descomprímelo. Usa la carpeta completa; el archivo `.command` necesita los scripts que están junto a él. Si usas Git, la alternativa es:
 
    ```sh
    git clone https://github.com/lechuit/Steam-Wine-Setup.git
    cd Steam-Wine-Setup
    ```
 
-2. Para el ZIP de GitHub guardado en Descargas, abre Terminal y entra en la carpeta extraída:
+2. Para el ZIP de la release guardado en Descargas, abre Terminal y entra en la carpeta extraída:
 
    ```sh
-   cd "$HOME/Downloads/Steam-Wine-Setup-main"
+   cd "$HOME/Downloads/Steam-Wine-Setup"
    ```
 
    Si la guardaste en otro lugar, escribe `cd ` y arrastra la carpeta descomprimida a Terminal.
