@@ -16,9 +16,9 @@ game="$steam/steamapps/common/FINAL FANTASY RESONANCE/FFRS.exe"
 source_url=https://github.com/lechuit/mac-windows-gaming.git
 source_ref=refs/heads/resonance-base
 revision=c0bbee764f4317b4bcaeea08a0fb46cb051691e7
-fork_url=https://github.com/lechuit/NotProton.git
-fork_ref=refs/heads/wine11-free-base
-fork_revision=5b8d18683b619b66390be8cbcffc1fbf47e45971
+notproton_url=https://github.com/lechuit/NotProton-Wine11.git
+notproton_ref=refs/heads/main
+notproton_revision=5b8d18683b619b66390be8cbcffc1fbf47e45971
 export PATH="/opt/homebrew/bin:$PATH"
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
@@ -73,10 +73,10 @@ if ! stack_ready; then
   git -C "$checkout" fetch -q --depth 1 "$source_url" "$source_ref"
   git -C "$checkout" checkout -q --detach FETCH_HEAD
   [[ "$(git -C "$checkout" rev-parse HEAD)" == "$revision" ]] || fail 'No coincide la revisión del instalador de NotProton.'
-  fork_tip="$(git ls-remote --exit-code "$fork_url" "$fork_ref" | cut -f1)"
-  [[ "$fork_tip" == "$fork_revision" ]] || fail 'No coincide la revisión guardada en el fork de NotProton.'
+  notproton_tip="$(git ls-remote --exit-code "$notproton_url" "$notproton_ref" | cut -f1)"
+  [[ "$notproton_tip" == "$notproton_revision" ]] || fail 'No coincide la revisión guardada en NotProton-Wine11.'
   # Redirect only the source checkout. Keep upstream version pins and checksums.
-  python3 - "$checkout/scripts/setup-notproton.sh" "$fork_url" "$fork_ref" "$fork_revision" <<'PY'
+  python3 - "$checkout/scripts/setup-notproton.sh" "$notproton_url" "$notproton_ref" "$notproton_revision" <<'PY'
 from pathlib import Path
 import sys
 
