@@ -13,12 +13,8 @@ free_runner="$HOME/Library/Application Support/notproton/runners/sikarugir-11/bi
 tool="$steam/compatibilitytools.d/notproton/run"
 prefix="$steam/steamapps/compatdata/3259780/pfx"
 game="$steam/steamapps/common/FINAL FANTASY RESONANCE/FFRS.exe"
-source_url=https://github.com/lechuit/mac-windows-gaming-base.git
-source_ref=refs/heads/main
-revision=cf0dbd830d7f91e33b44d14d66e58cee48dc828e
-notproton_url=https://github.com/lechuit/NotProton-Wine11.git
-notproton_ref=refs/heads/main
-notproton_revision=5b8d18683b619b66390be8cbcffc1fbf47e45971
+base="$root/vendor/mac-windows-gaming"
+bundled_notproton="$root/vendor/notproton"
 export PATH="/opt/homebrew/bin:$PATH"
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
@@ -51,7 +47,7 @@ esac
 [[ "$(uname -m)" == arm64 ]] || fail 'Se necesita un Mac con Apple Silicon y una Terminal ejecutada sin Rosetta.'
 version="$(sw_vers -productVersion)"
 (( ${version%%.*} >= 15 )) || fail 'Esta compilación de NotProton requiere macOS 15 o posterior.'
-[[ -f "$profile" ]] || fail 'Descomprime el ZIP completo antes de abrir el instalador.'
+[[ -f "$profile" && -f "$base/install.sh" && -f "$bundled_notproton/Makefile" ]] || fail 'Descomprime el ZIP completo antes de abrir el instalador.'
 if ! xcrun --find clang >/dev/null 2>&1; then
   xcode-select --install || true
   fail 'Completa la instalación de las herramientas de Apple y vuelve a abrir este instalador.'
@@ -67,35 +63,8 @@ if ! stack_ready; then
   read -r answer
   [[ "$answer" == s || "$answer" == S ]] || exit 0
   steam_closed
-  checkout="$(mktemp -d "${TMPDIR:-/tmp}/resonance-notproton.XXXXXX")"
-  trap 'rm -rf -- "$checkout"' EXIT
-  git -C "$checkout" init -q
-  git -C "$checkout" fetch -q --depth 1 "$source_url" "$source_ref"
-  git -C "$checkout" checkout -q --detach FETCH_HEAD
-  [[ "$(git -C "$checkout" rev-parse HEAD)" == "$revision" ]] || fail 'No coincide la revisión del instalador de NotProton.'
-  notproton_tip="$(git ls-remote --exit-code "$notproton_url" "$notproton_ref" | cut -f1)"
-  [[ "$notproton_tip" == "$notproton_revision" ]] || fail 'No coincide la revisión guardada en NotProton-Wine11.'
-  # Redirect only the source checkout. Keep upstream version pins and checksums.
-  python3 - "$checkout/scripts/setup-notproton.sh" "$notproton_url" "$notproton_ref" "$notproton_revision" <<'PY'
-from pathlib import Path
-import sys
-
-path, url, ref, revision = sys.argv[1:]
-path = Path(path)
-text = path.read_text()
-if text.count(f'FORK_COMMIT="{revision}"') != 1:
-    raise SystemExit('No coincide la revisión de NotProton en el instalador base.')
-for old, new in (
-    ('FORK_URL="https://github.com/NotProtonNot/NotProton.git"', f'FORK_URL="{url}"'),
-    ('FORK_REF="pull/18/head"', f'FORK_REF="{ref}"'),
-):
-    if text.count(old) != 1:
-        raise SystemExit('Cambió la configuración del instalador base.')
-    text = text.replace(old, new, 1)
-path.write_text(text)
-PY
   if [[ ! -d "$steam_app" ]]; then
-    bash "$checkout/install.sh" --no-heroic
+    bash "$base/install.sh" --no-heroic
     pause 'Inicia sesión en Steam y deja que termine de actualizarse.'
   elif [[ ! -f "$steam/config/config.vdf" ]]; then
     /usr/bin/open -a "$steam_app"
@@ -103,7 +72,7 @@ PY
   fi
   steam_closed
   [[ -f "$steam/config/config.vdf" ]] || fail 'Abre Steam, inicia sesión y vuelve a ejecutar este instalador.'
-  bash "$checkout/install.sh" --no-heroic
+  bash "$base/install.sh" --no-heroic
   stack_ready || fail 'No se pudo confirmar la instalación de NotProton.'
 fi
 
