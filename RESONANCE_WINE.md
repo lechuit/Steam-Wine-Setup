@@ -54,6 +54,8 @@ Si falta la compilación, ese comando no puede reparar el puente. La instalació
 | Preferencia `native,builtin` para `msvcp140`, `msvcp140_1`, `msvcp140_2`, `vcruntime140` y `vcruntime140_1` | Registro de Wine del mismo prefijo. Wine prueba primero las bibliotecas instaladas por Microsoft. |
 | `%command% NOTPROTON_RETINA=0` | Opciones de lanzamiento del juego en Steam. NotProton usa la resolución lógica de la pantalla; el valor depende de la pantalla y de la escala configurada en macOS. |
 
+En un prefijo nuevo, Wine puede registrar Visual C++ como instalado aunque aún use sus bibliotecas internas. El instalador comprueba también que las DLL requeridas sean x64 y que no sean las internas de Wine antes de omitir el paquete de Microsoft.
+
 Para volver al modo Retina, quita `NOTPROTON_RETINA=0` de las opciones de lanzamiento de RESONANCE y conserva las demás. Si reinstalas el juego y se pierde su prefijo, vuelve a ejecutar `install` tras crearlo. El repositorio guarda el procedimiento y sus parámetros; los binarios de Microsoft, partidas, registros y credenciales permanecen fuera de Git.
 
 ## Resultado observado

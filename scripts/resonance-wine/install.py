@@ -79,10 +79,25 @@ def registry_section(path, key):
     return match[1] if match else ''
 
 
+def native_amd64_dll(path):
+    # A fresh Wine prefix can advertise VC++ even when it has only built-ins.
+    try:
+        with path.open('rb') as file:
+            header = file.read(4096)
+    except FileNotFoundError:
+        return False
+    if len(header) < 64 or header[:2] != b'MZ':
+        return False
+    if any(mark in header[:256] for mark in (b'Wine builtin DLL', b'Wine placeholder DLL')):
+        return False
+    pe_offset = int.from_bytes(header[60:64], 'little')
+    return header[pe_offset:pe_offset + 6] == b'PE\0\0\x64\x86'
+
+
 def runtime_installed():
     section = registry_section(PREFIX / 'system.reg', r'Software\Microsoft\VisualStudio\14.0\VC\Runtimes\x64')
     return '"Installed"=dword:00000001' in section and all(
-        (PREFIX / 'drive_c/windows/system32' / (name + '.dll')).is_file() for name in DLLS
+        native_amd64_dll(PREFIX / 'drive_c/windows/system32' / (name + '.dll')) for name in DLLS
     )
 
 
