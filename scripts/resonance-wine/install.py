@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 
 APP_ID = '3259780'
 GAME_NAME = 'FINAL FANTASY RESONANCE'
@@ -90,6 +91,16 @@ def overrides_installed():
     return all(f'"{name}"="native,builtin"' in section.splitlines() for name in DLLS)
 
 
+def wait_for_registry(check, timeout=40):
+    """Wine can persist its registry after the helper process exits."""
+    deadline = time.monotonic() + timeout
+    while not check():
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.5)
+    return True
+
+
 def require_closed():
     names = subprocess.run(['/bin/ps', '-axo', 'comm='], capture_output=True, text=True, check=True).stdout
     active = {line.strip().replace('\\', '/').rsplit('/', 1)[-1].lower() for line in names.splitlines()}
@@ -119,7 +130,7 @@ def install(config, source, revised):
         if not REDIST.is_file():
             raise SystemExit('Falta VC_redist.x64.exe en Steamworks Shared. Instala Steamworks Common Redistributables desde Steam.')
         wine(str(REDIST), '/install', '/quiet', '/norestart', '/log', r'C:\vcredist-resonance-x64.log')
-        if not runtime_installed():
+        if not wait_for_registry(runtime_installed):
             raise SystemExit('No se pudo confirmar Visual C++ x64. Revisa vcredist-resonance-x64.log dentro de drive_c.')
     if not overrides_installed():
         backup(PREFIX / 'user.reg')
@@ -130,6 +141,8 @@ def install(config, source, revised):
             reg.write(content)
             reg.flush()
             wine('reg.exe', 'import', 'C:\\' + Path(reg.name).name)
+        if not wait_for_registry(overrides_installed):
+            raise SystemExit('Wine aún no guardó las preferencias de bibliotecas. Ejecuta status antes de volver a intentar.')
     require_closed()
     if revised != source:
         if config.read_text() != source:

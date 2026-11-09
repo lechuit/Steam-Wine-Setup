@@ -29,7 +29,7 @@ stack_ready() {
     /usr/libexec/PlistBuddy -c 'Print :LSEnvironment:DYLD_INSERT_LIBRARIES' "$steam_app/Contents/Info.plist" 2>/dev/null |
       /usr/bin/grep -Fxq "$steam_app/Contents/MacOS/notproton.dylib"
 }
-steam_url() { /usr/bin/open -b com.valvesoftware.steam "$1"; }
+steam_url() { /usr/bin/open -a "$steam_app" "$1"; }
 
 case "$mode" in
   --help|-h) printf 'Uso: bash Instalar.command [--base-only | --resonance | --aion2 | --status]\n'; exit 0 ;;
@@ -96,7 +96,7 @@ fi
 
 if [[ ! -f "$prefix/user.reg" || ! -f "$prefix/system.reg" ]]; then
   steam_url 'steam://rungameid/3259780'
-  pause 'Deja que el primer arranque cree el entorno de Wine. Cierra el juego o el aviso de Visual C++ si aparece.'
+  pause 'Si el juego no se inicia automáticamente, pulsa Jugar en Steam. Deja que el primer arranque cree el entorno de Wine y cierra el juego o el aviso de Visual C++ si aparece.'
 fi
 
 steam_closed
