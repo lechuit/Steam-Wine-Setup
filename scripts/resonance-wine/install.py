@@ -23,35 +23,63 @@ RUN = STEAM / 'compatibilitytools.d/notproton/run'
 REDIST = STEAM / 'steamapps/common/Steamworks Shared/_CommonRedist/vcredist/2022/VC_redist.x64.exe'
 VDF_TOKEN = re.compile(r'"(?:\\.|[^"\\])*"|[{}]')
 OPTION = re.compile(r'("LaunchOptions"\s*")((?:\\.|[^"\\])*)(")')
+APPS_PATH = ('userlocalconfigstore', 'software', 'valve', 'steam', 'apps')
+
+
+def vdf_block(source, path):
+    stack = []
+    matches = []
+    previous = None
+    for token in VDF_TOKEN.finditer(source):
+        if token[0] == '{':
+            if previous is None or not previous[0].startswith('"'):
+                raise SystemExit('La configuración de Steam contiene un bloque sin nombre.')
+            stack.append((previous[0][1:-1].lower(), token.start()))
+        elif token[0] == '}':
+            if not stack:
+                raise SystemExit('La configuración de Steam contiene un cierre de bloque inesperado.')
+            if tuple(key for key, _ in stack) == path:
+                matches.append((stack[-1][1], token.start()))
+            stack.pop()
+        previous = token
+    if stack or len(matches) > 1:
+        raise SystemExit('La configuración de Steam contiene bloques incompletos o duplicados.')
+    return matches[0] if matches else None
+
+
+def ensure_vdf_block(source, path):
+    if vdf_block(source, path):
+        return source
+    if len(path) == 1:
+        raise SystemExit('Falta UserLocalConfigStore. Inicia sesión en Steam y vuelve a cerrarlo.')
+    source = ensure_vdf_block(source, path[:-1])
+    _, end = vdf_block(source, path[:-1])
+    line = source.rfind('\n', 0, end) + 1
+    indent = source[line:end]
+    if indent.strip():
+        raise SystemExit('No se encontró una línea segura para agregar el perfil de RESONANCE.')
+    child = indent + '\t'
+    return source[:line] + f'{child}"{path[-1]}"\n{child}{{\n{child}}}\n' + source[line:]
 
 
 def settings_file():
     files = []
+    matches = []
     for path in (STEAM / 'userdata').glob('*/config/localconfig.vdf'):
         source = path.read_text()
-        if re.search(rf'"{APP_ID}"\s*\{{', source):
-            files.append((path, source))
-    if len(files) != 1:
-        raise SystemExit('No hay una configuración única de RESONANCE. Abre el juego desde tu cuenta de Steam al menos una vez.')
-    return files[0]
+        files.append((path, source))
+        if vdf_block(source, APPS_PATH + (APP_ID,)):
+            matches.append((path, source))
+    candidates = matches or files
+    if len(candidates) != 1:
+        raise SystemExit('No hay una configuración única de Steam para RESONANCE. Inicia sesión y configura el juego en la cuenta que usarás.')
+    return candidates[0]
 
 
 def with_retina_disabled(source):
-    matches = list(re.finditer(rf'"{APP_ID}"\s*\{{', source))
-    if len(matches) != 1:
-        raise SystemExit('El bloque de RESONANCE falta o está duplicado.')
-    start = matches[0].end() - 1
-    depth = 0
-    for token in VDF_TOKEN.finditer(source, start):
-        if token[0] == '{':
-            depth += 1
-        elif token[0] == '}':
-            depth -= 1
-            if depth == 0:
-                end = token.start()
-                break
-    else:
-        raise SystemExit('El bloque de RESONANCE está incompleto.')
+    path = APPS_PATH + (APP_ID,)
+    source = ensure_vdf_block(source, path)
+    start, end = vdf_block(source, path)
     block = source[start:end]
     options = list(OPTION.finditer(block))
     if len(options) > 1:
@@ -73,7 +101,10 @@ def with_retina_disabled(source):
 
 
 def registry_section(path, key):
-    source = path.read_text(errors='replace')
+    try:
+        source = path.read_text(errors='replace')
+    except FileNotFoundError:
+        return ''
     header = '[' + key.replace('\\', '\\\\') + ']'
     match = re.search(r'^' + re.escape(header) + r'[^\n]*\n(.*?)(?=^\[|\Z)', source, re.M | re.S)
     return match[1] if match else ''
@@ -139,8 +170,7 @@ def backup(path):
     print(f'Copia local: {target}')
 
 
-def install(config, source, revised):
-    require_closed()
+def prepare_runtime():
     if not runtime_installed():
         if not REDIST.is_file():
             raise SystemExit('Falta VC_redist.x64.exe en Steamworks Shared. Instala Steamworks Common Redistributables desde Steam.')
@@ -158,6 +188,11 @@ def install(config, source, revised):
             wine('reg.exe', 'import', 'C:\\' + Path(reg.name).name)
         if not wait_for_registry(overrides_installed):
             raise SystemExit('Wine aún no guardó las preferencias de bibliotecas. Ejecuta status antes de volver a intentar.')
+
+
+def install(config, source, revised):
+    require_closed()
+    prepare_runtime()
     require_closed()
     if revised != source:
         if config.read_text() != source:
@@ -177,8 +212,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=('status', 'install'))
     action = parser.parse_args().action
-    if not (RUN.is_file() and GAME.is_dir() and (PREFIX / 'user.reg').is_file() and (PREFIX / 'system.reg').is_file()):
-        raise SystemExit('Instala NotProton, descarga RESONANCE y ábrelo una vez desde Steam para crear su prefijo.')
+    if not (RUN.is_file() and GAME.is_dir()):
+        raise SystemExit('Instala NotProton y descarga RESONANCE desde Steam.')
     config, source = settings_file()
     revised = with_retina_disabled(source)
     if action == 'install':

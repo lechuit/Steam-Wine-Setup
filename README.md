@@ -54,7 +54,7 @@ bash Instalar.command --base-only
 
 | Juego | Qué hacer |
 | --- | --- |
-| **FINAL FANTASY RESONANCE** | Ejecuta `bash Instalar.command --resonance`. Confirma la descarga en la biblioteca predeterminada de Steam, deja que el primer inicio cree el entorno de Wine y cierra el aviso de Visual C++ si aparece. Cuando el instalador lo pida, sal de Steam. El perfil instala Visual C++ x64 desde Steamworks, prioriza sus bibliotecas y desactiva Retina para el juego. [Guía completa](RESONANCE_WINE.md). |
+| **FINAL FANTASY RESONANCE** | Ejecuta `bash Instalar.command --resonance`. Confirma la descarga en la biblioteca predeterminada de Steam y sal de Steam cuando se te pida. **Espera a que termine el perfil antes de pulsar Jugar.** El instalador crea el entorno de Wine, instala y verifica Visual C++ x64 desde Steamworks, prioriza sus bibliotecas y desactiva Retina para el juego. [Guía completa](RESONANCE_WINE.md). |
 | **AION 2** | Ejecuta `bash Instalar.command --aion2` y sigue la [guía de AION 2](AION2_WINE_GPTK.md) para las opciones de Steam; los videos de los tutoriales pueden omitirse para evitar el bloqueo observado. |
 | **Otros juegos** | Prueba primero con la base. Si necesitas un ajuste, aplícalo solo al juego afectado en sus propiedades. Por ejemplo, `%command% NOTPROTON_RETINA=0` desactiva Retina para ese título. Guarda las opciones anteriores antes de modificarlas. |
 

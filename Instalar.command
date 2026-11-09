@@ -11,7 +11,6 @@ steam="$HOME/Library/Application Support/Steam"
 runner="$HOME/Library/Application Support/notproton/runners/current/bin/wine"
 free_runner="$HOME/Library/Application Support/notproton/runners/sikarugir-11/bin/wine"
 tool="$steam/compatibilitytools.d/notproton/run"
-prefix="$steam/steamapps/compatdata/3259780/pfx"
 game="$steam/steamapps/common/FINAL FANTASY RESONANCE/FFRS.exe"
 base="$root/vendor/mac-windows-gaming"
 bundled_notproton="$root/vendor/notproton"
@@ -94,12 +93,8 @@ if [[ ! -f "$game" ]]; then
   [[ -f "$game" ]] || fail 'El juego aún no está instalado en la biblioteca predeterminada. Completa la descarga y vuelve a ejecutar este instalador.'
 fi
 
-if [[ ! -f "$prefix/user.reg" || ! -f "$prefix/system.reg" ]]; then
-  steam_url 'steam://rungameid/3259780'
-  pause 'Si el juego no se inicia automáticamente, pulsa Jugar en Steam. Deja que el primer arranque cree el entorno de Wine y cierra el juego o el aviso de Visual C++ si aparece.'
-fi
-
 steam_closed
+printf '\nPreparando RESONANCE antes del primer inicio. Wine puede tardar al crear el entorno.\n'
 python3 "$profile" install
 printf '\nConfiguración de RESONANCE aplicada. Abre el juego desde tu biblioteca de Steam.\n'
 /usr/bin/open -a "$steam_app"

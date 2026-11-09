@@ -12,7 +12,7 @@ bash Instalar.command --resonance
 
 Si faltan las herramientas de compilación de Apple, el script abre su instalador. Cuando termine, vuelve a ejecutar el comando. Si faltan Steam o el puente libre, el script pide permiso y usa el código de instalación y de NotProton incluidos en el ZIP. NotProton guarda una copia de Steam, modifica y vuelve a firmar la app, y queda como herramienta predeterminada de compatibilidad para juegos de Windows. Si ya está instalado con el motor Wine 11 esperado, se reutiliza.
 
-Inicia sesión, confirma la instalación del juego en la biblioteca predeterminada y cierra Steam cuando el instalador lo solicite. Si el juego no se abre automáticamente, pulsa **Jugar** en Steam. El primer inicio crea el entorno de Wine y puede tardar más que los siguientes. Cierra el aviso de Visual C++ si aparece, sal de Steam y continúa en Terminal. El instalador espera a que Wine guarde el registro antes de verificar las bibliotecas. Este comando aplica solo el perfil de RESONANCE. Steam y NotProton se comparten entre juegos; para el otro perfil, consulta la [guía de AION 2](AION2_WINE_GPTK.md).
+Inicia sesión, confirma la instalación del juego en la biblioteca predeterminada y cierra Steam cuando el instalador lo solicite. **No hace falta abrir el juego para crear su entorno de Wine.** El perfil lo crea, instala Visual C++ y espera a que Wine guarde el registro antes de verificar las bibliotecas. Cuando termine, abre el juego desde la biblioteca. Este comando aplica solo el perfil de RESONANCE. Steam y NotProton se comparten entre juegos; para el otro perfil, consulta la [guía de AION 2](AION2_WINE_GPTK.md).
 
 Consulta [las revisiones, los créditos y las licencias](VENDORED_SOURCES.md) de las fuentes incluidas. El instalador usa esas copias locales y aplica el parche de NotProton en el Mac. Se requiere Internet para descargar Steam, los juegos, el motor Wine, Dobby, los componentes del puente y las firmas de Steam según corresponda.
 
@@ -34,7 +34,7 @@ Si falta la compilación, ese comando no puede reparar el puente. La instalació
 
 ## Restaurar la configuración
 
-1. Instala el juego y arráncalo una vez con NotProton para que Steam cree su prefijo de Wine. Si aparece el aviso de Visual C++, cierra el juego.
+1. Instala el juego desde tu cuenta de Steam. Deja que termine la descarga antes de aplicar el perfil.
 2. Confirma que Steam descargó **Steamworks Common Redistributables**. El instalador usa `steamapps/common/Steamworks Shared/_CommonRedist/vcredist/2022/VC_redist.x64.exe` de la biblioteca de Steam.
 3. Cierra Steam completamente y ejecuta desde la raíz de este repositorio:
 
@@ -56,7 +56,7 @@ Si falta la compilación, ese comando no puede reparar el puente. La instalació
 
 En un prefijo nuevo, Wine puede registrar Visual C++ como instalado aunque aún use sus bibliotecas internas. El instalador comprueba también que las DLL requeridas sean x64 y que no sean las internas de Wine antes de omitir el paquete de Microsoft.
 
-Para volver al modo Retina, quita `NOTPROTON_RETINA=0` de las opciones de lanzamiento de RESONANCE y conserva las demás. Si reinstalas el juego y se pierde su prefijo, vuelve a ejecutar `install` tras crearlo. El repositorio guarda el procedimiento y sus parámetros; los binarios de Microsoft, partidas, registros y credenciales permanecen fuera de Git.
+Para volver al modo Retina, quita `NOTPROTON_RETINA=0` de las opciones de lanzamiento de RESONANCE y conserva las demás. Si reinstalas el juego y se pierde su prefijo, vuelve a ejecutar `install` para crearlo y preparar sus dependencias. El repositorio guarda el procedimiento y sus parámetros; los binarios de Microsoft, partidas, registros y credenciales permanecen fuera de Git.
 
 ## Resultado observado
 
