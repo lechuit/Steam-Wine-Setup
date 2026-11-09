@@ -21,6 +21,9 @@ PREFIX = DATA / 'pfx'
 GAME = STEAM / 'steamapps/common' / GAME_NAME
 RUN = STEAM / 'compatibilitytools.d/notproton/run'
 REDIST = STEAM / 'steamapps/common/Steamworks Shared/_CommonRedist/vcredist/2022/VC_redist.x64.exe'
+SOURCE_ROOT = Path.home() / 'Library/Caches/notproton-free/src'
+STEAM_APP = Path('/Applications/Steam.app')
+GUARD = Path(__file__).with_name('launcher-guard.sh').read_text().rstrip()
 VDF_TOKEN = re.compile(r'"(?:\\.|[^"\\])*"|[{}]')
 OPTION = re.compile(r'("LaunchOptions"\s*")((?:\\.|[^"\\])*)(")')
 APPS_PATH = ('userlocalconfigstore', 'software', 'valve', 'steam', 'apps')
@@ -168,6 +171,81 @@ def backup(path):
     target = folder / f'{path.name}.before-resonance-{stamp}'
     shutil.copy2(path, target)
     print(f'Copia local: {target}')
+    return target
+
+
+def atomic_text(path, content, validate=False):
+    with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as tmp:
+        tmp.write(content)
+        target = Path(tmp.name)
+    try:
+        shutil.copymode(path, target)
+        if validate:
+            subprocess.run(['/bin/sh', '-n', str(target)], check=True)
+        target.replace(path)
+    finally:
+        target.unlink(missing_ok=True)
+
+
+def with_launcher_guard(source):
+    if GUARD in source:
+        return source
+    anchor = 'prefix_game_running() {\n'
+    activate = re.search(r'^  game_pid=\$\(ps -ww -eo pid,args[^\n]*\)$', source, re.M)
+    if source.count(anchor) != 1 or not activate or '# BEGIN RESONANCE process detection' in source:
+        raise SystemExit('El lanzador de NotProton cambió. Revisa la versión antes de aplicar el perfil.')
+    source = source[:activate.start()] + (
+        '  game_pid=\n'
+        '  if [ "$app_id" = 3259780 ]; then\n'
+        '    game_pid=$(resonance_game_pid)\n'
+        '  fi\n'
+        '  if [ -z "$game_pid" ]; then\n' + '  ' + activate[0] + '\n  fi'
+    ) + source[activate.end():]
+    return source.replace(anchor, GUARD + '\n\n' + anchor + (
+        '  if [ "$app_id" = 3259780 ] && [ -n "$(resonance_game_pid)" ]; then\n'
+        '    return 0\n'
+        '  fi\n'
+    ), 1)
+
+
+def install_launcher_guard():
+    source_path = SOURCE_ROOT / 'dylib/feats/compat_run.sh'
+    dylib = STEAM_APP / 'Contents/MacOS/notproton.dylib'
+    built = SOURCE_ROOT / 'out/notproton.dylib'
+    if not source_path.is_file() or not dylib.is_file():
+        raise SystemExit('Falta la compilación local de NotProton. Repara la base antes de aplicar el perfil.')
+    source = source_path.read_text()
+    revised = with_launcher_guard(source)
+    run_source = RUN.read_text()
+    if source == revised and run_source == revised and built.is_file() and built.read_bytes() == dylib.read_bytes():
+        return
+    require_closed()
+    original_dylib = backup(dylib)
+    backup(source_path)
+    backup(RUN)
+    print('Actualizando la detección del proceso de RESONANCE…', flush=True)
+
+    def sign():
+        for path in (dylib, STEAM_APP / 'Contents/MacOS/steam_osx', STEAM_APP):
+            subprocess.run(['/usr/bin/codesign', '-f', '-s', '-', str(path)], check=True, capture_output=True)
+        subprocess.run(['/usr/bin/codesign', '--verify', str(STEAM_APP)], check=True, capture_output=True)
+
+    replaced_dylib = False
+    try:
+        atomic_text(source_path, revised, validate=True)
+        subprocess.run(['make', 'all'], cwd=SOURCE_ROOT, check=True)
+        require_closed()
+        replaced_dylib = True
+        shutil.copy2(built, dylib)
+        sign()
+        atomic_text(RUN, revised, validate=True)
+    except (Exception, SystemExit):
+        atomic_text(source_path, source)
+        if replaced_dylib:
+            shutil.copy2(original_dylib, dylib)
+            sign()
+            atomic_text(RUN, run_source)
+        raise
 
 
 def prepare_runtime():
@@ -193,19 +271,13 @@ def prepare_runtime():
 def install(config, source, revised):
     require_closed()
     prepare_runtime()
+    install_launcher_guard()
     require_closed()
     if revised != source:
         if config.read_text() != source:
             raise SystemExit('Steam cambió la configuración durante la instalación. Vuelve a ejecutarla con Steam cerrado.')
         backup(config)
-        with tempfile.NamedTemporaryFile(mode='w', dir=config.parent, delete=False) as tmp:
-            tmp.write(revised)
-            target = Path(tmp.name)
-        try:
-            shutil.copymode(config, target)
-            target.replace(config)
-        finally:
-            target.unlink(missing_ok=True)
+        atomic_text(config, revised)
 
 
 def main():
@@ -225,10 +297,12 @@ def main():
     runtime = runtime_installed()
     overrides = overrides_installed()
     retina_disabled = with_retina_disabled(current) == current
+    launcher_ready = GUARD in RUN.read_text()
     print('Visual C++ x64:', 'instalado' if runtime else 'pendiente')
     print('Bibliotecas nativas:', 'configuradas' if overrides else 'pendientes')
     print('Retina:', 'desactivado para RESONANCE' if retina_disabled else 'pendiente')
-    if action == 'install' and not all((runtime, overrides, retina_disabled)):
+    print('Detección del juego:', 'configurada' if launcher_ready else 'pendiente')
+    if action == 'install' and not all((runtime, overrides, retina_disabled, launcher_ready)):
         raise SystemExit('No se pudo verificar toda la configuración. Revisa los ajustes pendientes.')
 
 

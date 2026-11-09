@@ -56,6 +56,8 @@ Si falta la compilación, ese comando no puede reparar el puente. La instalació
 
 En un prefijo nuevo, Wine puede registrar Visual C++ como instalado aunque aún use sus bibliotecas internas. El instalador comprueba también que las DLL requeridas sean x64 y que no sean las internas de Wine antes de omitir el paquete de Microsoft.
 
+El perfil también actualiza la detección del proceso de RESONANCE en NotProton. Cuando Rosetta muestra el nombre del ejecutable de Windows, el lanzador lo reconoce por su ruta y mantiene el entorno abierto. Para integrar el ajuste, recompila el puente y vuelve a firmar la copia local de Steam con Steam cerrado.
+
 Para volver al modo Retina, quita `NOTPROTON_RETINA=0` de las opciones de lanzamiento de RESONANCE y conserva las demás. Si reinstalas el juego y se pierde su prefijo, vuelve a ejecutar `install` para crearlo y preparar sus dependencias. El repositorio guarda el procedimiento y sus parámetros; los binarios de Microsoft, partidas, registros y credenciales permanecen fuera de Git.
 
 ## Resultado observado
